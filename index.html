@@ -1,31 +1,155 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="styles.css">
-  <title>Twitter Anonyme</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>anonetwork</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Ensure textarea and input focus states are consistent */
+        input:focus, textarea:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.5); /* Blue-500 equivalent */
+        }
+    </style>
 </head>
-<body>
-  <!-- ... -->
-<header>
-  <div class="ribbon" onclick="refreshPage()">
-    <img src="logo.png" alt="Logo du site">
-  </div>
-</header>
-<!-- ... -->
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col">
 
-  
-  <main>
-    <div class="tweet-box">
-      <input type="text" id="pseudo" placeholder="Pseudo">
-      <textarea id="tweet-content" placeholder="Quoi de neuf ?"></textarea>
-      <button onclick="sendTweet()">Tweeter</button>
-    </div>
+    <header class="bg-gray-800 p-4 shadow-lg">
+        <div class="max-w-3xl mx-auto flex items-center justify-center cursor-pointer" onclick="refreshPage()">
+            <!-- Placeholder for your logo. Replace with your actual logo.png if desired,
+                 or use an SVG icon for better scalability. -->
+            <img src="highres_lgo.png" alt="Site Logo" class="rounded-full w-16 h-16 object-cover">
+            <h1 class="text-3xl font-extrabold ml-4 text-blue-400">Twitter Anonyme</h1>
+        </div>
+    </header>
 
-    <div id="tweet-list"></div>
-  </main>
+    <main class="flex-grow flex flex-col items-center p-4">
+        <div class="tweet-box bg-gray-800 rounded-xl shadow-xl p-6 mb-8 w-full max-w-xl">
+            <h2 class="text-2xl font-semibold mb-4 text-center text-blue-300">Share Anonymously</h2>
+            <input type="text" id="pseudo" placeholder="Your Pseudo (optional)"
+                   class="w-full p-3 mb-4 bg-gray-700 text-gray-100 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all duration-200">
+            <textarea id="tweet-content" placeholder="What's on your mind?" rows="4"
+                      class="w-full p-3 mb-6 bg-gray-700 text-gray-100 border border-gray-600 rounded-lg resize-y focus:ring-2 focus:ring-blue-500 transition-all duration-200"></textarea>
+            <button onclick="sendTweet()"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">
+                Tweet
+            </button>
+        </div>
 
-  <script src="script.js"></script>
+        <p id="no-tweets-message" class="text-center text-gray-400 text-lg hidden mb-4">No tweets yet. Be the first to share!</p>
+        <div id="tweet-list" class="w-full max-w-xl">
+            </div>
+    </main>
+
+    <script>
+        // Function to refresh the page when the logo is clicked
+        function refreshPage() {
+            window.location.reload();
+        }
+
+        // Function to send a tweet
+        function sendTweet() {
+            const pseudoInput = document.getElementById("pseudo");
+            const contentInput = document.getElementById("tweet-content");
+
+            let pseudo = pseudoInput.value.trim();
+            const content = contentInput.value.trim();
+
+            if (!content) {
+                // Simple feedback for empty content
+                contentInput.placeholder = "Please enter some content!";
+                contentInput.classList.add('border-red-500');
+                setTimeout(() => {
+                    contentInput.placeholder = "What's on your mind?";
+                    contentInput.classList.remove('border-red-500');
+                }, 2000);
+                return;
+            }
+
+            // Use "Anonymous" if pseudo is empty
+            if (!pseudo) {
+                pseudo = "Anonymous";
+            }
+
+            // Check for localStorage availability
+            if (typeof(Storage) !== "undefined") {
+                // Retrieve existing tweets from local storage
+                let existingTweets = JSON.parse(localStorage.getItem("tweets")) || [];
+
+                // Add the new tweet to the list
+                const newTweet = {
+                    pseudo: pseudo,
+                    content: content,
+                    timestamp: new Date().toISOString() // Add a timestamp for potential sorting
+                };
+                existingTweets.unshift(newTweet); // Add to the beginning for newest first
+
+                // Save the updated list to local storage
+                localStorage.setItem("tweets", JSON.stringify(existingTweets));
+
+                // Update the tweet display
+                displayTweets();
+
+                // Clear input fields after tweeting
+                pseudoInput.value = "";
+                contentInput.value = "";
+            } else {
+                console.error("Local storage is not supported by your browser.");
+                // Provide a user-friendly message if local storage is not available
+                const tweetList = document.getElementById("tweet-list");
+                tweetList.innerHTML = `<p class="text-center text-red-500">Your browser does not support local storage. Tweets cannot be saved.</p>`;
+            }
+        }
+
+        // Function to display tweets
+        function displayTweets() {
+            const tweetList = document.getElementById("tweet-list");
+            const noTweetsMessage = document.getElementById("no-tweets-message"); // Get reference BEFORE clearing tweetList.innerHTML
+
+            // Clear existing tweets from the tweet-list div
+            tweetList.innerHTML = "";
+
+            if (typeof(Storage) !== "undefined") {
+                // Retrieve tweets from local storage
+                const existingTweets = JSON.parse(localStorage.getItem("tweets")) || [];
+
+                if (existingTweets.length === 0) {
+                    // Show the "no tweets" message if there are no tweets
+                    if (noTweetsMessage) { // Defensive check
+                        noTweetsMessage.classList.remove('hidden');
+                    }
+                } else {
+                    // Hide the "no tweets" message if there are tweets
+                    if (noTweetsMessage) { // Defensive check
+                        noTweetsMessage.classList.add('hidden');
+                    }
+                    // Display each tweet
+                    existingTweets.forEach(function(tweet) {
+                        const tweetElement = document.createElement("div");
+                        tweetElement.className = "tweet bg-gray-800 rounded-xl shadow-md p-4 mb-4 border border-gray-700";
+                        tweetElement.innerHTML = `
+                            <p class="text-blue-400 font-semibold text-lg mb-1">${tweet.pseudo}</p>
+                            <p class="text-gray-200 break-words">${tweet.content}</p>
+                            ${tweet.timestamp ? `<p class="text-gray-500 text-sm mt-2">${new Date(tweet.timestamp).toLocaleString()}</p>` : ''}
+                        `;
+                        tweetList.appendChild(tweetElement);
+                    });
+                }
+            } else {
+                console.error("Local storage is not supported by your browser.");
+                if (noTweetsMessage) { // Defensive check
+                    noTweetsMessage.classList.remove('hidden');
+                    noTweetsMessage.textContent = "Your browser does not support local storage. Tweets cannot be displayed.";
+                }
+            }
+        }
+
+        // Call the tweet display function on page load
+        window.onload = displayTweets;
+    </script>
 </body>
 </html>
